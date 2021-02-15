@@ -30,7 +30,6 @@ class CategoryPickerViewController: UITableViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.tabBarController?.tabBar.isHidden = true
         
         for i in 0..<categories.count {
             if categories[i] == selectedCategoryName {
@@ -57,6 +56,11 @@ class CategoryPickerViewController: UITableViewController {
         } else {
             cell.accessoryType = .none
         }
+        
+        let selection = UIView(frame: CGRect.zero)
+        selection.backgroundColor = UIColor(white: 1.0, alpha: 0.3)
+        cell.selectedBackgroundView = selection
+        
         return cell
     }
     
@@ -81,7 +85,6 @@ class CategoryPickerViewController: UITableViewController {
             if let indexPath = tableView.indexPath(for: cell) {
                 selectedCategoryName = categories[indexPath.row]
             }
-            self.tabBarController?.tabBar.isHidden = false
         }
     }
 }

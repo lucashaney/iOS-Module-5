@@ -6,13 +6,50 @@
 //
 
 import UIKit
+import CoreData
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+    
+    // Properties
+    // Sets up core data stack
+    lazy var persistentContainer: NSPersistentContainer = {
+        let container = NSPersistentContainer(name: "DataModel")
+        container.loadPersistentStores { (storeDescription, error) in
+            if let error = error {
+                fatalError("Could not load data store: \(error)")
+            }
+        }
+        return container
+    }()
+    
+    lazy var managedObjectContext: NSManagedObjectContext = persistentContainer.viewContext
 
     var window: UIWindow?
 
-
+    // Passes managedObejctContext to CurrentViewController
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        
+        customizeAppearance()
+        
+        let tabController = window!.rootViewController as! UITabBarController
+        
+        if let tabViewControllers = tabController.viewControllers {
+            
+            var navController = tabViewControllers[0] as! UINavigationController
+            let controller1 = navController.viewControllers.first as! CurrentLocationViewController
+            controller1.managedObjectContext = managedObjectContext
+            
+            navController = tabViewControllers[1] as! UINavigationController
+            let controller2 = navController.viewControllers.first as! LocationsViewContoller
+            controller2.managedObjectContext = managedObjectContext
+            
+            navController = tabViewControllers[2] as! UINavigationController
+            let controller3 = navController.viewControllers.first as! MapViewController
+            controller3.managedObjectContext = managedObjectContext
+        }
+        
+        //print(applicationDocumentsDirectory)
+        listenForFatalCoreDataNotifications()
         // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
         // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
@@ -45,6 +82,36 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Called as the scene transitions from the foreground to the background.
         // Use this method to save data, release shared resources, and store enough scene-specific state information
         // to restore the scene back to its current state.
+    }
+    
+    // MARK:- Helper Methods
+    // Listener for handling fatal core data error
+    func listenForFatalCoreDataNotifications() {
+        NotificationCenter.default.addObserver(forName: CoreDataSaveFailedNotification, object: nil, queue: OperationQueue.main, using: { notification in
+            
+            let message = """
+    There was a fatal error in the app and it cannot continue.
+    Press OK to terminate the app. Sorry for the inconvenience.
+    """
+            let alert = UIAlertController(title: "Internal Error", message: message, preferredStyle: .alert)
+            let action = UIAlertAction(title: "OK", style: .default) { _ in
+                let exception = NSException(name: NSExceptionName.internalInconsistencyException, reason: "Fatal Core Data Error", userInfo: nil)
+                exception.raise()
+            }
+            alert.addAction(action)
+            
+            let tabController = self.window!.rootViewController!
+            tabController.present(alert, animated: true, completion: nil)
+        })
+    }
+    
+    // Customizes appearance for navigation bar and tab bar
+    func customizeAppearance() {
+        UINavigationBar.appearance().barTintColor = UIColor.black
+        UINavigationBar.appearance().titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
+        UITabBar.appearance().barTintColor = UIColor.black
+        let tintColor = UIColor(red: 255/255.0, green: 238/255.0, blue: 136/255.0, alpha: 1.0)
+        UITabBar.appearance().tintColor = tintColor
     }
 
 
